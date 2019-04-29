@@ -1,46 +1,46 @@
-'use strict';
+"use strict";
 
 (function() {
-
-  let dataset = 'no data'
   let data = "no data";
   let svgContainer = ""; // keep SVG reference in global scope
-  let currentYear;
+  let currentYear = "1960";
 
   // load data and make scatter plot after window loads
   window.onload = function() {
-    svgContainer = d3.select('body')
-      .append('svg')
-      .attr('width', 500)
-      .attr('height', 500);
-    
+    svgContainer = d3
+      .select("body")
+      .append("svg")
+      .attr("width", 500)
+      .attr("height", 500);
+
     // d3.csv is basically fetch but it can be be passed a csv file as a parameter
     d3.csv("./data/dataEveryYear.csv")
-      .then((data) => drawDropdown(data))
-      .then((data) => makeScatterPlot(data, 1960));
-  }
+      .then(data => drawDropdown(data))
+      .then(data => makeScatterPlot(data));
+  };
 
   function selectYear() {
     // clear viz
-    svgContainer = d3.select('svg').html("");
-    
+    svgContainer = d3.select("svg").html("");
+
     // get the year from the dropdown
-    const year = d3.select(this).property('value')
+    currentYear = d3.select(this).property("value");
 
     // redraw scatter plot
-    makeScatterPlot(dataset, year)
+    makeScatterPlot(data);
   }
 
   function drawDropdown(data) {
     // draw label
-    d3.select('div.year')
+    d3.select("div.year")
       .append("label")
-      .text("Select Year:")
+      .text("Select Year:");
 
     // draw dropdown
-    var dropdown = d3.select('div.year')
+    var dropdown = d3
+      .select("div.year")
       .append("select")
-      .on("change", selectYear)
+      .on("change", selectYear);
 
     // get unique years
     const yearValues = data
@@ -48,35 +48,38 @@
       .filter((value, index, self) => self.indexOf(value) === index);
 
     // insert year options in dropdowns
-    dropdown.selectAll("option")
+    dropdown
+      .selectAll("option")
       .data(yearValues)
-      .enter().append("option")
+      .enter()
+      .append("option")
       .attr("value", d => d)
       .text(d => d);
 
-    return data
-  }
-
-  // filter data by a given year
-  function filterByYear(year) {
-    return dataset.filter(row => +row.time === +year);
+    return data;
   }
 
   // make scatter plot with trend line
-  function makeScatterPlot(csvData, year) {
-    dataset = csvData; // assign data as global variable
-    
-    data = filterByYear(year); 
+  function makeScatterPlot(csvData) {
+    data = csvData; // assign data as global variable
 
     // get arrays of fertility rate data and life Expectancy data
-    let fertility_rate_data = data.map((row) => parseFloat(row["fertility_rate"]));
-    let life_expectancy_data = data.map((row) => parseFloat(row["life_expectancy"]));
+    let fertility_rate_data = data.map(row =>
+      parseFloat(row["fertility_rate"])
+    );
+    let life_expectancy_data = data.map(row =>
+      parseFloat(row["life_expectancy"])
+    );
 
     // find data limits
     let axesLimits = findMinMax(fertility_rate_data, life_expectancy_data);
 
     // draw axes and return scaling + mapping functions
-    let mapFunctions = drawAxes(axesLimits, "fertility_rate", "life_expectancy");
+    let mapFunctions = drawAxes(
+      axesLimits,
+      "fertility_rate",
+      "life_expectancy"
+    );
 
     // plot data as points and add tooltip functionality
     plotData(mapFunctions);
@@ -87,32 +90,36 @@
 
   // make title and axes labels
   function makeLabels() {
-    svgContainer.append('text')
-      .attr('x', 100)
-      .attr('y', 40)
-      .style('font-size', '14pt')
+    svgContainer
+      .append("text")
+      .attr("x", 100)
+      .attr("y", 40)
+      .style("font-size", "14pt")
       .text("Countries by Life Expectancy and Fertility Rate");
 
-    svgContainer.append('text')
-      .attr('x', 130)
-      .attr('y', 490)
-      .style('font-size', '10pt')
-      .text('Fertility Rates (Avg Children per Woman)');
+    svgContainer
+      .append("text")
+      .attr("x", 130)
+      .attr("y", 490)
+      .style("font-size", "10pt")
+      .text("Fertility Rates (Avg Children per Woman)");
 
-    svgContainer.append('text')
-      .attr('transform', 'translate(15, 300)rotate(-90)')
-      .style('font-size', '10pt')
-      .text('Life Expectancy (years)');
+    svgContainer
+      .append("text")
+      .attr("transform", "translate(15, 300)rotate(-90)")
+      .style("font-size", "10pt")
+      .text("Life Expectancy (years)");
   }
 
   // plot all the data points on the SVG
   // and add tooltip functionality
   function plotData(map) {
     // get population data as array
-    let pop_data = data.map((row) => +row["pop_mlns"]);
+    let pop_data = data.map(row => +row["pop_mlns"]);
     let pop_limits = d3.extent(pop_data);
     // make size scaling function for population
-    let pop_map_func = d3.scaleLinear()
+    let pop_map_func = d3
+      .scaleLinear()
       .domain([pop_limits[0], pop_limits[1]])
       .range([3, 20]);
 
@@ -121,79 +128,99 @@
     let yMap = map.y;
 
     // make tooltip
-    let div = d3.select("body").append("div")
-    .attr("class", "tooltip")
-    .style("opacity", 0);
-
+    let div = d3
+      .select("body")
+      .append("div")
+      .attr("class", "tooltip")
+      .style("opacity", 0);
 
     // append data to SVG and plot as points
-    svgContainer.selectAll('.dot')
+    svgContainer
+      .selectAll(".dot")
       .data(data)
       .enter()
-      .append('circle')
-        .attr('cx', xMap)
-        .attr('cy', yMap)
-        .attr('r', (d) => pop_map_func(d["pop_mlns"]))
-        .attr('fill', "#4286f4")
-        .style('opacity', .7)
-        .style('stroke', 'blue')
+      .filter(d => +d.time === +currentYear)
+      .append("circle")
+      .attr("cx", xMap)
+      .attr("cy", yMap)
+      .attr("r", d => pop_map_func(d["pop_mlns"]))
+      .attr("fill", "#4286f4")
+      .style("opacity", 0.7)
+      .style("stroke", "blue")
 
-        // add tooltip functionality to points
-        // country, year, life expectancy, fertility, and population data 
-        .on("mouseover", (d) => {
-          div.transition()
-            .duration(200)
-            .style("opacity", .9);
-          div.html(`
+      // add tooltip functionality to points
+      // country, year, life expectancy, fertility, and population data
+      .on("mouseover", d => {
+        div
+          .transition()
+          .duration(200)
+          .style("opacity", 0.9);
+        div
+          .html(
+            `
             <b><u>${d.location}</u></b><br/>
-            Pop: ${numberWithCommas(d["pop_mlns"]*1000000)}<br/>
+            Pop: ${numberWithCommas(d["pop_mlns"] * 1000000)}<br/>
             Life Expectancy: ${d.life_expectancy}<br/>
             Fertility Rate: ${d.fertility_rate}<br/>
-            Year: ${d.time}<br/>`)
-              .style("left", (d3.event.pageX + 20) + "px")
-              .style("top", (d3.event.pageY - 55) + "px");
-        })
-        .on("mouseout", (d) => {
-          div.transition()
-            .duration(500)
-            .style("opacity", 0);
-        });
+            Year: ${d.time}<br/>`
+          )
+          .style("left", d3.event.pageX + 20 + "px")
+          .style("top", d3.event.pageY - 55 + "px");
+      })
+      .on("mouseout", d => {
+        div
+          .transition()
+          .duration(500)
+          .style("opacity", 0);
+      });
   }
 
   // draw the axes and ticks
   function drawAxes(limits, x, y) {
     // return x value from a row of data
-    let xValue = function(d) { return +d[x]; }
+    let xValue = function(d) {
+      return +d[x];
+    };
 
     // function to scale x value
-    let xScale = d3.scaleLinear()
+    let xScale = d3
+      .scaleLinear()
       .domain([limits.xMin - 0.5, limits.xMax + 0.5]) // give domain buffer room
       .range([50, 450]);
 
     // xMap returns a scaled x value from a row of data
-    let xMap = function(d) { return xScale(xValue(d)); };
+    let xMap = function(d) {
+      return xScale(xValue(d));
+    };
 
     // plot x-axis at bottom of SVG
     let xAxis = d3.axisBottom().scale(xScale);
-    svgContainer.append("g")
-      .attr('transform', 'translate(0, 450)')
+    svgContainer
+      .append("g")
+      .attr("transform", "translate(0, 450)")
       .call(xAxis);
 
     // return y value from a row of data
-    let yValue = function(d) { return +d[y]}
+    let yValue = function(d) {
+      return +d[y];
+    };
 
     // function to scale y
-    let yScale = d3.scaleLinear()
+    let yScale = d3
+      .scaleLinear()
       .domain([limits.yMax + 5, limits.yMin - 5]) // give domain buffer
       .range([50, 450]);
 
     // yMap returns a scaled y value from a row of data
-    let yMap = function (d) { return yScale(yValue(d)); };
+    let yMap = function(d) {
+      return yScale(yValue(d));
+    };
 
     // plot y-axis at the left of SVG
     let yAxis = d3.axisLeft().scale(yScale);
-    svgContainer.append('g')
-      .attr('transform', 'translate(50, 0)')
+    svgContainer
+      .append("g")
+      .attr("transform", "translate(50, 0)")
       .call(yAxis);
 
     // return mapping and scaling functions
@@ -207,7 +234,6 @@
 
   // find min and max for arrays of x and y
   function findMinMax(x, y) {
-
     // get min/max x values
     let xMin = d3.min(x);
     let xMax = d3.max(x);
@@ -218,16 +244,15 @@
 
     // return formatted min/max data as an object
     return {
-      xMin : xMin,
-      xMax : xMax,
-      yMin : yMin,
-      yMax : yMax
-    }
+      xMin: xMin,
+      xMax: xMax,
+      yMin: yMin,
+      yMax: yMax
+    };
   }
 
   // format numbers
   function numberWithCommas(x) {
     return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   }
-
 })();
